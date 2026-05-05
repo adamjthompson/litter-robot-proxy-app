@@ -173,13 +173,19 @@ def cleanup_old_discovery(device_id, name=None):
         ("binary_sensor", "sleep_mode"),
         ("button",        "reset"),
     ]
-    # Always clear old raw device_id format topics
+    # Format 1: very first version — litter_robot_<device_id>_<suffix>
+    for component, suffix in components_suffixes:
+        topic = "%s/%s/litter_robot_%s_%s/config" % (
+            DISCOVERY_PREFIX, component, device_id, suffix
+        )
+        mqtt_client.publish(topic, "", retain=True)
+    # Format 2: second version — litter_robot_proxy_<device_id>_<suffix>
     for component, suffix in components_suffixes:
         topic = "%s/%s/%s_%s_%s/config" % (
             DISCOVERY_PREFIX, component, ADDON_ID, device_id, suffix
         )
         mqtt_client.publish(topic, "", retain=True)
-    # Also clear slug-based topics if we have a name
+    # Format 3 (current): slug-based — litter_robot_proxy_<slug>_<suffix>
     if name:
         slug = slugify(name)
         for component, suffix in components_suffixes:
