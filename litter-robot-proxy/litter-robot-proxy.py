@@ -480,7 +480,9 @@ def handle_from_robot(raw_data, addr):
             "lock":       parts[8],
         }
 
-        # Publish discovery on first contact
+        # On first contact: wipe any stale retained discovery topics, then publish fresh ones
+        if not discovery_published.get(device_id):
+            cleanup_old_discovery(device_id, name=name)
         publish_discovery(device_id, name)
 
         # Track cycle completions
