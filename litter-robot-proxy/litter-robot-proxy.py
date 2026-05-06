@@ -129,7 +129,7 @@ last_status             = {}   # device_id → raw status code
 
 def on_mqtt_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker with result code: %s" % rc)
-    client.subscribe("%s/+/reset" % ADDON_ID)
+    client.subscribe("%s/+/reset" % ADDON_ID, qos=1)
     # Clean up any stale discovery messages for previously known devices
     # Small delay to ensure broker connection is fully ready
     time.sleep(1)
@@ -360,6 +360,7 @@ def publish_discovery(device_id, name):
                 "name": "Reset Drawer Counter",
                 "command_topic": "%s/%s/reset" % (ADDON_ID, device_id),
                 "payload_press": "reset",
+                "qos": 1,
                 "icon": "mdi:restore",
                 "device": device_info,
                 "unique_id": "%s_%s_reset" % (ADDON_ID, device_id),
