@@ -1,13 +1,28 @@
 configuration:
   mqtt_host:
     name: MQTT Host
+    description: "Hostname or IP address of the MQTT broker. Default is generally 'core-mosquitto' or'localhost'."
   mqtt_port:
     name: MQTT Port
+    description: "Port number of the MQTT broker. Default is 1883."
   mqtt_user:
     name: MQTT Username
+    description: "Username for MQTT authentication."
   mqtt_pass:
     name: MQTT Password
+    description: "Password for MQTT authentication."
   offline_threshold:
     name: Offline Threshold
+    description: "Seconds to wait before a robot is considered offline. Default is 600 (10 minutes)."
   robots:
     name: Robots
+    fields:
+      name:
+        name: Name
+        description: "Friendly name for the robot."
+      ip:
+        name: IP Address
+        description: "IP address of the robot on the local network. A fixed IP is recommended for reliability."
+      capacity:
+        name: Capacity
+        description: "Number of cycles before the drawer is considered full. Default is 30 if left blank."
