@@ -93,10 +93,12 @@ def validate_options(opts):
 
 validate_options(options)
 
-# Build IP → robot name map from options
-robot_name_map = {}
+# Build IP → robot name/capacity map from options
+robot_name_map = {}      # ip → name
+robot_capacity_map = {}  # ip → capacity
 for robot in options.get("robots", []):
     robot_name_map[robot["ip"]] = robot["name"]
+    robot_capacity_map[robot["ip"]] = robot.get("capacity", 30)
 
 # ─── Persistent cycle storage ─────────────────────────────────────────────────
 
@@ -489,6 +491,15 @@ def handle_from_robot(raw_data, addr):
             return
 
         robot_names[device_id] = name
+
+        # Update capacity from config if it has changed
+        capacity = robot_capacity_map.get(ip, 30)
+        if device_id not in cycles:
+            cycles[device_id] = {"count": 0, "capacity": capacity}
+            save_cycles(cycles)
+        elif cycles[device_id].get("capacity", 30) != capacity:
+            cycles[device_id]["capacity"] = capacity
+            save_cycles(cycles)
 
         # Log only on first seen or IP change
         if device_id not in robot_addresses or robot_addresses[device_id] != addr:
