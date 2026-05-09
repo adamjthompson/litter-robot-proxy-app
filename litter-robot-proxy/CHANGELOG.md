@@ -1,6 +1,9 @@
 # Changelog
 
-## 1.0.5
+## 1.0.7
+- Updated error states to include more specific errors such as "Error - Bonnet Removed"
+
+## 1.0.6
 - Changed drawer full sensor to only trigger when FULL instead of almost full.
 - Changed error sensor to NOT include drawer full state.
 
