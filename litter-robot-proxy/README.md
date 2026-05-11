@@ -53,6 +53,7 @@ offline_threshold: 600         # Seconds before a robot is marked offline (defau
 robots:
   - name: "Litter Robot 1"    # Friendly name shown in Home Assistant
     ip: "192.168.1.101"       # Static IP of this robot on your network
+    capacity: 25              # Number of cycles before showing 100% (default is 30 if left blank)
   - name: "Litter Robot 2"
     ip: "192.168.1.102"
   - name: "Litter Robot 3"
@@ -69,7 +70,7 @@ The add-on uses MQTT Discovery to automatically create the following entities in
 
 | Entity | Type | Description |
 |--------|------|-------------|
-| Status | Sensor | Ready / Cleaning / Waiting / Paused / Complete / Alert / Full / Offline / Error |
+| Status | Sensor | Ready / Cleaning / Waiting / Paused / Paused - Cat Interrupted / Complete / Alert - Almost Full / Alert - Nearly Full / Full / Error - Bonnet Removed / Error - Cat Sensor Fault/ Offline / Off |
 | Drawer Level | Sensor | Estimated fill percentage based on cycle count |
 | Cycle Count | Sensor | Number of cleaning cycles since last reset |
 | Wait Time | Sensor | Configured wait time in minutes |
@@ -93,7 +94,7 @@ To calibrate per robot:
 2. Note the cycle count when the robot reports `DF1` (drawer full warning)
 3. That number is your robot's actual capacity
 
-There is currently no per-robot capacity configuration in the UI — this will be added in a future version. In the meantime, 30 cycles is a conservative default that will trend toward showing fuller than reality rather than missing a full drawer.
+30 cycles is a conservative default that will trend toward showing fuller than reality rather than missing a full drawer. The number of cycles can be configured for each robot in the UI.
 
 ## Offline detection
 
