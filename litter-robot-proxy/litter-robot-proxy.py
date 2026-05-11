@@ -44,23 +44,23 @@ ADDON_ID         = "litter_robot_proxy"
 STATUS_MAP = {
     "CCC": "Complete",
     "CCP": "Cleaning",
-    "CSF": "Error - Cat Sensor Fault",
-    "SCF": "Error - Cat Sensor Fault",
-    "CSI": "Paused - Cat Interrupted",
+    "CSF": "Error",
+    "SCF": "Error",
+    "CSI": "Paused",
     "CST": "Waiting",
-    "DF1": "Alert - Almost Full",
-    "DF2": "Alert - Nearly Full",
+    "DF1": "Alert",
+    "DF2": "Alert",
     "DFS": "Full",
     "SDF": "Full",
-    "BR":  "Error - Bonnet Removed",
+    "BR":  "Error",
     "P":   "Paused",
     "OFF": "Off",
     "Rdy": "Ready",
     "offline": "Offline",
 }
 
-ERROR_STATES       = {"CSF", "SCF", "BR", "P", "OFF", "offline"}
-DRAWER_FULL_STATES = {"DFS"}
+ERROR_STATES       = {"CSF", "SCF", "DFS", "SDF", "BR", "P", "OFF", "offline"}
+DRAWER_FULL_STATES = {"DF1", "DF2", "DFS"}
 
 # ─── Load options ─────────────────────────────────────────────────────────────
 
@@ -306,6 +306,7 @@ def publish_discovery(device_id, name):
                 "value_template": "{{ value_json.drawer_full }}",
                 "payload_on": "True",
                 "payload_off": "False",
+                "device_class": "problem",
                 "icon": "mdi:delete-alert",
                 "device": device_info,
                 "unique_id": "%s_%s_drawer_full" % (ADDON_ID, device_id),
@@ -321,6 +322,7 @@ def publish_discovery(device_id, name):
                 "value_template": "{{ value_json.error }}",
                 "payload_on": "True",
                 "payload_off": "False",
+                "device_class": "problem",
                 "icon": "mdi:alert",
                 "device": device_info,
                 "unique_id": "%s_%s_error" % (ADDON_ID, device_id),
@@ -600,11 +602,20 @@ else:
 
 # ─── Main loop ────────────────────────────────────────────────────────────────
 
+WATCHDOG_INTERVAL = 60  # run watchdog every 60 seconds regardless of traffic
+last_watchdog = time.time()
+
 while True:
-    read, _, _ = select.select([sock_litter, sock_server], [], [], 60)
+    # Use a short timeout so we check the watchdog frequently
+    read, _, _ = select.select([sock_litter, sock_server], [], [], 10)
+
+    # Run watchdog on interval regardless of whether we received traffic
+    now = time.time()
+    if now - last_watchdog >= WATCHDOG_INTERVAL:
+        check_offline()
+        last_watchdog = now
 
     if not read:
-        check_offline()
         continue
 
     for r in read:
