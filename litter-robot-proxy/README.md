@@ -1,13 +1,13 @@
-# Litter Robot Proxy — Home Assistant Add-On
+# Litter Robot Proxy — Home Assistant App
 
 This is a local MQTT proxy for **Litter Robot 3 Connect** devices. It intercepts UDP communication between your robots and Whisker's servers, publishing real-time status to Home Assistant via MQTT Discovery — no cloud dependency, no polling, no API credentials required.
 
 ## How it works
 
-Your Litter Robot 3 connects to Whisker's servers at `dispatch.prod.iothings.site` on UDP port 2001. This add-on sits in the middle:
+Your Litter Robot 3 connects to Whisker's servers at `dispatch.prod.iothings.site` on UDP port 2001. This app sits in the middle:
 
 ```
-LR3 → (DNS rewrite) → This add-on → Whisker servers (upstream relay)
+LR3 → (DNS rewrite) → This app → Whisker servers (upstream relay)
                              ↓
                       MQTT Discovery
                              ↓
@@ -18,12 +18,12 @@ The robots continue communicating with Whisker normally — the Whisker app keep
 
 ## Prerequisites
 
-- **Mosquitto broker** add-on installed in Home Assistant.
+- **Mosquitto broker** app installed in Home Assistant.
 - **AdGuard Home** (or another local DNS server) to redirect robot DNS queries. *This might also be possible directly on your router, if you know how.*
 
 ## Installation
 
-1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**
+1. In Home Assistant, go to **Settings → Apps → Install App**
 2. Click the **⋮** menu → **Repositories**
 3. Add this repository URL
 4. Find **Litter Robot Proxy** and click **Install**
@@ -38,14 +38,14 @@ Your Litter Robot 3 devices must resolve `dispatch.prod.iothings.site` to your H
 3. Domain: `dispatch.prod.iothings.site`
 4. Answer: `<your Home Assistant IP>`
 
-**Your IoT VLAN must also use AdGuard for DNS.** In your router/controller, set the DHCP DNS server for your IoT network to your AdGuard IP.
+**Your IoT VLAN must also use AdGuard for DNS.** In your router/controller, set the DHCP DNS server for your IoT network to your AdGuard IP (if you use a VLAN).
 
 After adding the rewrite, power cycle your Litter Robot(s). Check the AdGuard query log to confirm the robots' DNS queries show as **Rewritten**.
 
 ## Configuration
 
 ```yaml
-mqtt_host: "core-mosquitto"   # Use 'core-mosquitto' for the Mosquitto add-on
+mqtt_host: "core-mosquitto"   # Use 'core-mosquitto' for the Mosquitto app
 mqtt_port: 1883
 mqtt_user: ""                  # Your MQTT username
 mqtt_pass: ""                  # Your MQTT password
@@ -62,11 +62,11 @@ robots:
 
 > **Tip:** Assign static DHCP leases to your Litter Robots in your router so their IPs never change.
 
-> **Note:** If you don't configure any robots, the add-on will still work — it auto-discovers robots from traffic and names them by their device ID. Adding them by IP just gives them friendly names.
+> **Note:** If you don't configure any robots, the app will still work — it auto-discovers robots from traffic and names them by their device ID. Adding them by IP just gives them friendly names.
 
 ## Entities created per robot
 
-The add-on uses MQTT Discovery to automatically create the following entities in Home Assistant, grouped under a single device per robot:
+The app uses MQTT Discovery to automatically create the following entities in Home Assistant, grouped under a single device per robot:
 
 | Entity | Type | Description |
 |--------|------|-------------|
@@ -103,7 +103,7 @@ If a robot stops reporting for longer than `offline_threshold` seconds (default 
 ## Troubleshooting
 
 **Robots not appearing in Home Assistant:**
-- Check the add-on log for connection messages
+- Check the app log for connection messages
 - Verify the DNS rewrite is active in AdGuard
 - Confirm robots are using AdGuard for DNS (check AdGuard query log for robot IPs)
 - Power cycle the robots after setting up the DNS rewrite
@@ -113,12 +113,12 @@ If a robot stops reporting for longer than `offline_threshold` seconds (default 
 - Verify the robot is completing full cycles (not being interrupted)
 
 **Whisker app stopped working:**
-- The add-on relays all traffic to Whisker's servers transparently
-- If the app stops working, check the add-on log for upstream relay errors
+- The proxy app relays all traffic to Whisker's servers transparently
+- If the Whisker app stops working, check the proxy app log for upstream relay errors
 - The Whisker app's reliability depends on Whisker's cloud infrastructure
 
 ## Notes
 
-- Cycle counts persist across add-on restarts in `/data/cycles.json`
-- The add-on does **not** send commands to the robots — monitoring only
-- This add-on is not affiliated with Whisker or Litter Robot
+- Cycle counts persist across app restarts in `/data/cycles.json`
+- The app does **not** send commands to the robots — monitoring only
+- This app is not affiliated with Whisker or Litter Robot
