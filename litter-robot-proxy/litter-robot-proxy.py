@@ -464,17 +464,24 @@ def check_offline():
     for device_id, last_seen in list(robot_last_seen.items()):
         name = robot_names.get(device_id, device_id)
         elapsed = int(now - last_seen)
+        is_placeholder = device_id.startswith("pending_")
         if now - last_seen > OFFLINE_THRESHOLD:
             checked.append("%s (offline %ds)" % (name, elapsed))
             if not robot_offline_published.get(device_id, False):
-                print("%s WATCHDOG: %s (%s) has not reported in %ds - marking offline" % (
-                    datetime.datetime.now().isoformat(),
-                    name,
-                    device_id,
-                    elapsed
-                ))
-                last_status[device_id] = "offline"
-                publish_state(device_id, raw_status="offline", name=name)
+                if is_placeholder:
+                    # Placeholder has no real MQTT topic — log warning only, don't publish
+                    print("%s WATCHDOG: %s has not connected since startup — add device_id to config for proper offline detection" % (
+                        datetime.datetime.now().isoformat(), name
+                    ))
+                else:
+                    print("%s WATCHDOG: %s (%s) has not reported in %ds - marking offline" % (
+                        datetime.datetime.now().isoformat(),
+                        name,
+                        device_id,
+                        elapsed
+                    ))
+                    last_status[device_id] = "offline"
+                    publish_state(device_id, raw_status="offline", name=name)
                 robot_offline_published[device_id] = True
         else:
             checked.append("%s (ok, %ds ago)" % (name, elapsed))
