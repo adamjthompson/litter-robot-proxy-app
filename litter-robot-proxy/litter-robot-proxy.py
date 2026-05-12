@@ -44,15 +44,15 @@ ADDON_ID         = "litter_robot_proxy"
 STATUS_MAP = {
     "CCC": "Complete",
     "CCP": "Cleaning",
-    "CSF": "Error - Cat Sensor Fault",
-    "SCF": "Error - Cat Sensor Fault",
-    "CSI": "Paused - Cat Interrupted",
+    "CSF": "Cat Sensor Fault",
+    "SCF": "Cat Sensor Fault",
+    "CSI": "Cat Interrupted",
     "CST": "Waiting",
     "DF1": "Almost Full",
     "DF2": "Nearly Full",
     "DFS": "Full",
     "SDF": "Full",
-    "BR":  "Error - Bonnet Removed",
+    "BR":  "Bonnet Removed",
     "P":   "Paused",
     "OFF": "Off",
     "Rdy": "Ready",
@@ -402,10 +402,12 @@ def publish_discovery(device_id, name):
 
 # ─── State publishing ─────────────────────────────────────────────────────────
 
-def publish_state(device_id, raw_status=None, parsed=None):
+def publish_state(device_id, raw_status=None, parsed=None, name=None):
     """Publish unified state message for a robot."""
     if raw_status is None:
         raw_status = last_status.get(device_id, "offline")
+    if name is None:
+        name = robot_names.get(device_id, "")
 
     cycle_count    = get_cycle_count(device_id)
     cycle_capacity = get_cycle_capacity(device_id)
@@ -425,6 +427,7 @@ def publish_state(device_id, raw_status=None, parsed=None):
     state = {
         "status":       STATUS_MAP.get(raw_status, "Error"),
         "raw_status":   raw_status,
+        "name":         name,
         "cycle_count":  cycle_count,
         "drawer_level": drawer_level,
         "drawer_full":  str(raw_status in DRAWER_FULL_STATES),
@@ -597,16 +600,37 @@ if robot_name_map:
     print("Configured robots:")
     for ip, name in robot_name_map.items():
         print("  %s → %s" % (ip, name))
+    # On startup, immediately publish offline for all configured robots
+    # and set up placeholders for watchdog tracking.
+    # Robots that are online will reconnect and override this quickly.
+    startup_ts = time.time() - OFFLINE_THRESHOLD
+    for ip, name in robot_name_map.items():
+        placeholder_id = "pending_%s" % ip.replace(".", "_")
+        robot_last_seen[placeholder_id]         = startup_ts
+        robot_names[placeholder_id]             = name
+        robot_offline_published[placeholder_id] = True  # mark as published so watchdog won't re-publish
+        print("  Publishing offline for %s (%s) until it checks in" % (name, ip))
+        # Publish offline immediately — robot will override when it connects
+        publish_state(placeholder_id, raw_status="offline", name=name)
 else:
     print("WARNING: No robots configured. Add robot IPs to the add-on configuration.")
 
 # ─── Main loop ────────────────────────────────────────────────────────────────
 
+WATCHDOG_INTERVAL = 60  # run watchdog every 60 seconds regardless of traffic
+last_watchdog = time.time()
+
 while True:
-    read, _, _ = select.select([sock_litter, sock_server], [], [], 60)
+    # Use a short timeout so we check the watchdog frequently
+    read, _, _ = select.select([sock_litter, sock_server], [], [], 10)
+
+    # Run watchdog on interval regardless of whether we received traffic
+    now = time.time()
+    if now - last_watchdog >= WATCHDOG_INTERVAL:
+        check_offline()
+        last_watchdog = now
 
     if not read:
-        check_offline()
         continue
 
     for r in read:
