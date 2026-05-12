@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.2
+- Updated watchdog to log every time it runs, making it easier to track errors
+
 ## 1.1.1
 - Updated proxy to output friendly names in offline state payloads
 

@@ -450,19 +450,26 @@ def publish_state(device_id, raw_status=None, parsed=None, name=None):
 
 def check_offline():
     now = time.time()
+    checked = []
     for device_id, last_seen in robot_last_seen.items():
+        name = robot_names.get(device_id, device_id)
+        elapsed = int(now - last_seen)
         if now - last_seen > OFFLINE_THRESHOLD:
+            checked.append("%s (offline %ds)" % (name, elapsed))
             if not robot_offline_published.get(device_id, False):
-                name = robot_names.get(device_id, device_id)
                 print("%s WATCHDOG: %s (%s) has not reported in %ds - marking offline" % (
                     datetime.datetime.now().isoformat(),
                     name,
                     device_id,
-                    int(now - last_seen)
+                    elapsed
                 ))
                 last_status[device_id] = "offline"
-                publish_state(device_id, raw_status="offline")
+                publish_state(device_id, raw_status="offline", name=name)
                 robot_offline_published[device_id] = True
+        else:
+            checked.append("%s (ok, %ds ago)" % (name, elapsed))
+    if checked:
+        print("%s WATCHDOG: %s" % (datetime.datetime.now().isoformat(), ", ".join(checked)))
 
 # ─── Packet handlers ──────────────────────────────────────────────────────────
 
