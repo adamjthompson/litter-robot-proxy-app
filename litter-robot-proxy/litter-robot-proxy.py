@@ -458,35 +458,47 @@ def publish_state(device_id, raw_status=None, parsed=None, name=None):
 
 # ─── Watchdog ─────────────────────────────────────────────────────────────────
 
+def check_upstream():
+    """Verify upstream server is reachable."""
+    try:
+        import socket as _socket
+        test_sock = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
+        test_sock.settimeout(5)
+        # Send a dummy packet and see if we get a response
+        # Just resolving the hostname is enough to check DNS
+        _socket.getaddrinfo(HOST_SERVER, 2001)
+        test_sock.close()
+        return True
+    except Exception as e:
+        print("%s WARNING: Cannot reach upstream server %s: %s" % (
+            datetime.datetime.now().isoformat(), HOST_SERVER, str(e)
+        ))
+        return False
+
 def check_offline():
     now = time.time()
     checked = []
     for device_id, last_seen in list(robot_last_seen.items()):
         name = robot_names.get(device_id, device_id)
         elapsed = int(now - last_seen)
-        is_placeholder = device_id.startswith("pending_")
         if now - last_seen > OFFLINE_THRESHOLD:
             checked.append("%s (offline %ds)" % (name, elapsed))
             if not robot_offline_published.get(device_id, False):
-                if is_placeholder:
-                    # Placeholder has no real MQTT topic — log warning only, don't publish
-                    print("%s WATCHDOG: %s has not connected since startup — add device_id to config for proper offline detection" % (
-                        datetime.datetime.now().isoformat(), name
-                    ))
-                else:
-                    print("%s WATCHDOG: %s (%s) has not reported in %ds - marking offline" % (
-                        datetime.datetime.now().isoformat(),
-                        name,
-                        device_id,
-                        elapsed
-                    ))
-                    last_status[device_id] = "offline"
-                    publish_state(device_id, raw_status="offline", name=name)
+                print("%s WATCHDOG: %s (%s) has not reported in %ds - marking offline" % (
+                    datetime.datetime.now().isoformat(),
+                    name,
+                    device_id,
+                    elapsed
+                ))
+                last_status[device_id] = "offline"
+                publish_state(device_id, raw_status="offline", name=name)
                 robot_offline_published[device_id] = True
         else:
             checked.append("%s (ok, %ds ago)" % (name, elapsed))
     if checked:
         print("%s WATCHDOG: %s" % (datetime.datetime.now().isoformat(), ", ".join(checked)))
+    # Check upstream connectivity
+    check_upstream()
 
 # ─── Packet handlers ──────────────────────────────────────────────────────────
 
@@ -588,7 +600,12 @@ def handle_from_robot(raw_data, addr):
             robot_offline_published[device_id] = False
 
     # Always relay upstream unchanged
-    sock_litter.sendto(raw_data, (HOST_SERVER, 2001))
+    try:
+        sock_litter.sendto(raw_data, (HOST_SERVER, 2001))
+    except Exception as e:
+        print("%s ERROR: Failed to relay to upstream server: %s" % (
+            datetime.datetime.now().isoformat(), str(e)
+        ))
 
 def handle_from_server(raw_data, addr):
     try:
@@ -611,7 +628,12 @@ def handle_from_server(raw_data, addr):
         target_addr = robot_addresses.get(device_id)
 
     if target_addr:
-        sock_server.sendto(raw_data, (target_addr[0], 2000))
+        try:
+            sock_server.sendto(raw_data, (target_addr[0], 2000))
+        except Exception as e:
+            print("%s ERROR: Failed to relay to robot at %s: %s" % (
+                datetime.datetime.now().isoformat(), target_addr[0], str(e)
+            ))
     else:
         print("ERROR: No address known for device, cannot forward: %s" % msg)
 
