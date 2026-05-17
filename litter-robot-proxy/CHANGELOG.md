@@ -1,7 +1,7 @@
 # Changelog
 
 # 1.2.2
-- Adjust script so that server reponses are properly routed
+- Adjust script so that server responses are properly routed
 
 # 1.2.1
 - Added logging for local and Whisker server responses
