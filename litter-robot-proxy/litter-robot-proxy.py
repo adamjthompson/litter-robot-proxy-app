@@ -488,6 +488,17 @@ def handle_from_robot(raw_data, addr):
 
     parts = msg.split(",")
 
+    # --- Local AOK Spoofing ---
+    # Instantly reply to the robot to prevent it from dropping offline due to Whisker server issues
+    if len(parts) >= 2 and parts[0].startswith('>LR3'):
+        device_id = parts[1]
+        fake_aok = f"AOK,{device_id}"
+        try:
+            # The robot expects the server response on port 2000
+            sock_server.sendto(fake_aok.encode('utf-8'), (addr[0], 2000))
+        except Exception as e:
+            print("%s ERROR: Failed to send fake AOK to %s: %s" % (datetime.datetime.now().isoformat(), addr[0], str(e)))
+
     if len(parts) == 12:
         device_id  = parts[1]
         raw_status = parts[4]
