@@ -496,6 +496,10 @@ def handle_from_robot(raw_data, addr):
         try:
             # The robot expects the server response on port 2000
             sock_server.sendto(fake_aok.encode('utf-8'), (addr[0], 2000))
+            # Log the successful spoof
+            print("%-27s %-16s %5d LOCAL_AOK       %s" % (
+                datetime.datetime.now().isoformat(), addr[0], 2000, fake_aok
+            ))
         except Exception as e:
             print("%s ERROR: Failed to send fake AOK to %s: %s" % (datetime.datetime.now().isoformat(), addr[0], str(e)))
 
@@ -623,6 +627,8 @@ def handle_from_server(raw_data, addr):
     elif len(parts) == 2 and parts[0] in ("AOK", "NOK"):
         device_id   = parts[1]
         target_addr = robot_addresses.get(device_id)
+        # Log the actual AOK/NOK response from the Whisker cloud
+        print("%-27s %-16s %5d FROM_SERVER     %s" % (datetime.datetime.now().isoformat(), addr[0], addr[1], msg))
 
     if target_addr:
         try:
