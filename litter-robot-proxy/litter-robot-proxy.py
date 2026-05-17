@@ -488,8 +488,12 @@ def handle_from_robot(raw_data, addr):
 
     parts = msg.split(",")
 
+    # Because of NAT, Whisker's replies hit sock_litter (2001) instead of sock_server (2000)
+    if parts[0] in ("AOK", "NOK") or len(parts) == 5:
+        handle_from_server(raw_data, addr)
+        return
+
     # --- Local AOK Spoofing ---
-    # Instantly reply to the robot to prevent it from dropping offline due to Whisker server issues
     if len(parts) >= 2 and parts[0].startswith('>LR3'):
         device_id = parts[1]
         fake_aok = f"AOK,{device_id}"

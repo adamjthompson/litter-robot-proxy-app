@@ -1,5 +1,8 @@
 # Changelog
 
+# 1.2.2
+- Adjust script so that server reponses are properly routed
+
 # 1.2.1
 - Added logging for local and Whisker server responses
 
@@ -9,6 +12,3 @@
 # 1.1.9
 - Added auto-adjusting robot capacities
 - Added logic to ignore the first cycle after an offline status is resolved to prevent extra cycle increments
-
-# 1.1.8
-- Replaced incorrect litter-robot-proxy.py file from last update
